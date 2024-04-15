@@ -1,4 +1,3 @@
-// src/components/DailyTodoList.tsx
 import React, { useState } from 'react';
 import './DailyTodoList.css';
 
@@ -35,8 +34,13 @@ const DailyTodoList: React.FC<DailyTodoListProps> = ({ todos, setTodos }) => {
         setTodos(updatedTodos);
     };
 
+    const deleteTask = (id: number) => {
+        const filteredTodos = todos.filter((task) => task.id !== id);
+        setTodos(filteredTodos);
+    };
+
     return (
-        <div className='daily-container'>
+        <div className="daily-container">
             <h1>Daily Tasks</h1>
             <input
                 type="text"
@@ -62,6 +66,9 @@ const DailyTodoList: React.FC<DailyTodoListProps> = ({ todos, setTodos }) => {
                         >
                             {task.name}
                         </span>
+                        <button onClick={() => deleteTask(task.id)}>
+                            x
+                        </button>
                     </li>
                 ))}
             </ul>
@@ -70,6 +77,3 @@ const DailyTodoList: React.FC<DailyTodoListProps> = ({ todos, setTodos }) => {
 };
 
 export default DailyTodoList;
-
-
-

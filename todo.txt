@@ -1,0 +1,3 @@
+1.adds notes to tasks ---when i have clicked to this note link it will open a modal related to task.
+2.have draggables next to tasks will return 75%complited color of text through 
+will change 100%complited task will be red color
