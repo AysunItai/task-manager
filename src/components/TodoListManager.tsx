@@ -1,35 +1,28 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Task, TodoList } from '../types'; // Import the types
+
 import './TodoListManager.css';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import Modal from '../utils/NoteModal'; // Import the modal component
 
-interface Props {
-    state: { [key: string]: TodoList };
-    setState: React.Dispatch<React.SetStateAction<{ [key: string]: TodoList }>>;
+
+interface TodoList {
+    name: string;
+    tasks: Task[];
 }
 interface Task {
     id: number;
     name: string;
     description: string;
+    completed?: boolean; 
     assignedeveloper?: string;
     notes?: string;
 }
 
-interface NoteButtonProps {
-    onDrop: (taskId: number) => void;
-}
-
-interface TaskItemProps {
-    task: Task;
-    onNoteButtonClick: (taskId: number) => void;
-}
-
-interface TodoListManagerProps {
-    tasks: Task[];
-    setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
+interface Props {
+    state: { [key: string]: TodoList };
+    setState: React.Dispatch<React.SetStateAction<{ [key: string]: TodoList }>>;
 }
 
 // NoteModal component (assume imported or defined above)
@@ -111,7 +104,7 @@ const TaskItem: React.FC<{
     
 
 const TodoListManager: React.FC<Props> = ({ state, setState }) => {
-    const { projectName } = useParams<{ projectName: string }>();
+    const { projectName } = useParams<{ projectName?: string }>();
     const [taskName, setTaskName] = useState('');
     const [taskDescription, setTaskDescription] = useState('');
     const [assignedDeveloper, setAssignedDeveloper] = useState('');
@@ -120,21 +113,31 @@ const TodoListManager: React.FC<Props> = ({ state, setState }) => {
     const [currentNote, setCurrentNote] = useState('');
 
     const handleOpenModal = (taskId: number) => {
-        const task = state[projectName]?.tasks.find((t) => t.id === taskId);
-        setCurrentTaskId(taskId);
-        setCurrentNote(task?.notes || ''); // Ensure this is correctly fetching the current note
-        setModalOpen(true);
+        if (projectName) {
+            const task = state[projectName]?.tasks.find((t:Task) => t.id === taskId);
+            setCurrentTaskId(taskId);
+            setCurrentNote(task?.notes || '');
+            setModalOpen(true);
+        }
     };
 
    const handleSaveNote = (note: string) => {
-       const updatedTasks = state[projectName]?.tasks.map((task) =>
-           task.id === currentTaskId ? { ...task, notes: note } : task
-       );
-       setState((prevState) => ({
-           ...prevState,
-           [projectName]: { ...prevState[projectName], tasks: updatedTasks },
-       }));
-       setModalOpen(false);
+      if (projectName) {
+          const updatedTasks = state[projectName]?.tasks.map((task : Task) =>
+              task.id === currentTaskId ? { ...task, notes: note } : task
+          );
+          if (updatedTasks) {
+              setState((prevState) => ({
+                  ...prevState,
+                  [projectName]: {
+                      ...prevState[projectName],
+                      tasks: updatedTasks,
+                  },
+              }));
+              setModalOpen(false);
+          }
+      }
+       
    };
 
 
@@ -164,12 +167,26 @@ const TodoListManager: React.FC<Props> = ({ state, setState }) => {
     };
 
     const toggleTaskCompleted = (taskId: number) => {
-        const newList = { ...state[projectName] };
-        newList.tasks = newList.tasks.map((task) =>
-            task.id === taskId ? { ...task, completed: !task.completed } : task
-        );
-        setState({ ...state, [projectName]: newList });
+        if (!projectName) {
+            console.error('Project name is undefined.');
+            return;
+        }
+        const project = state[projectName];
+        if (!project) {
+            console.error('Project not found.');
+            return;
+        }
+        const newList = {
+            ...project,
+            tasks: project.tasks.map((task: Task) =>
+                task.id === taskId
+                    ? { ...task, completed: !task.completed }
+                    : task
+            ),
+        };
+        setState((prevState) => ({ ...prevState, [projectName]: newList }));
     };
+
 
     return (
         <DndProvider backend={HTML5Backend}>
@@ -198,21 +215,21 @@ const TodoListManager: React.FC<Props> = ({ state, setState }) => {
                 </div>
                 <div>
                     <NoteButton onDrop={handleOpenModal} />
-                    {state[projectName]?.tasks.map((task) => (
-                        <TaskItem
-                            key={task.id}
-                            task={task}
-                            onNoteButtonClick={handleOpenModal}
-                            toggleCompletion={toggleTaskCompleted}  // Passing the function
-                        />
-                    ))}
+                    {projectName &&
+                        state[projectName]?.tasks.map((task: Task) => (
+                            <TaskItem
+                                key={task.id}
+                                task={task}
+                                onNoteButtonClick={handleOpenModal}
+                                toggleCompletion={toggleTaskCompleted} // Passing the function
+                            />
+                        ))}
                     <Modal
                         isOpen={modalOpen}
                         onRequestClose={() => setModalOpen(false)}
                         onSave={handleSaveNote}
                         currentNote={currentNote}
                     />
-                    
                 </div>
             </div>
         </DndProvider>
